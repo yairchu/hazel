@@ -1,8 +1,10 @@
+.action-palette {
+    float: left;
+    zoom: 0.75;
+    width: 50%;
+}
+
 .display-3{
-	height: 72px;
-	font-size: 60px;
-	width: 80%;
-	float: left;
 }
 
 .subtext{
@@ -27,18 +29,20 @@
 }
 
 .ModelExp {
-	padding: 10px;
+        float: right;
+	padding: 8px;
 	font-size: xx-large;
 	margin-top: 20px;
 	background-color: white;
-	width:100%;
+	width:50%;
 	border: 2px solid #999;
 	display: table;
 }
 
 .ModelType {
+  float:right;
   font-size: large;
-	width:100%
+  width:50%
 }
 
 .typeLbl {
@@ -85,8 +89,8 @@ button:disabled {
 	background-image: none;
 	background-color: transparent;
 	border-color: #975633;
-	margin-bottom: 10px;
-	margin-right:20px;
+	margin-bottom: 2px;
+	margin-right: 4px;
 	}
 
 .input-group{

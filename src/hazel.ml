@@ -328,7 +328,7 @@ module ActionPalette = struct
     let constructNEHole = action_button (Action.Construct Action.SNEHole) "construct neHole" KCs.qmark in 
 
     (* finally, put it all together into the action palette *)
-    Html5.(div ~a:[a_class ["row";"marketing"]] [
+    Html5.(div ~a:[a_class ["row";"action-palette"]] [
         div ~a:[a_class ["col-lg-3"; "col-md-3"; "col-sm-3"]] [
           div ~a:[a_class ["panel";"panel-default"]] [
             div ~a:[a_class ["panel-title"]] [pcdata "Movement"];
@@ -347,9 +347,7 @@ module ActionPalette = struct
             div ~a:[a_class ["panel-body"]] [
               (delete);
             ]
-          ]
-        ];
-        div ~a:[a_class ["col-lg-3"; "col-md-3"; "col-sm-3"]] [
+          ];
           div ~a:[a_class ["panel";"panel-default"]] [
             div ~a:[a_class ["panel-title"]] [pcdata "Type Construction"];
             div ~a:[a_class ["panel-body"]] [
@@ -366,7 +364,7 @@ module ActionPalette = struct
               (finish)
             ]
           ]
-        ]
+        ]	      
         ;
         div ~a:[a_class ["col-lg-6"; "col-md-6"; "col-sm-6"]] [
           div ~a:[a_class ["panel";"panel-default"]] [
@@ -416,23 +414,28 @@ module AppView = struct
 
     Tyxml_js.To_dom.of_div Html5.(
         div [
+(*
+          div ~a:[a_class ["headerTextAndLogo"]] [
+             div ~a:[a_class ["display-3"]] [pcdata "Hazel"];
+             div ~a:[a_class ["logoDiv"]] [
+              img ~a:[a_id "logo"] ~alt:("Logo") ~src:(Xml.uri_of_string ("imgs/hazel-logo.png")) ()
+            ]];
+ *)
           div ~a:[a_class ["jumbotron"]] [
-            div ~a:[a_class ["headerTextAndLogo"]] [
-              div ~a:[a_class ["display-3"]] [pcdata "Hazel"];
-              div ~a:[a_class ["logoDiv"]] [
-                img ~a:[a_id "logo"] ~alt:("Logo") ~src:(Xml.uri_of_string ("imgs/hazel-logo.png")) ()
-              ]
-            ]; 
+(*
             div ~a:[a_class ["subtext"]] [
               pcdata "(a structure editor rooted in the principles of type theory)"]; br (); 
-
+ *)
+(*
             div ~a:[a_class ["typeLbl"]] [pcdata 
                                             ("Pretty-printed (width=" ^ (string_of_int pp_view_width) ^ "):")]; 
+ *)
+            ActionPalette.make_palette (rs, rf);
             div ~a:[a_class ["ModelExp"]] [pp_view]; br ();
             div ~a:[a_class ["subtext"; "ModelType"]] [
               div ~a:[a_class ["typeLbl"]] [pcdata "Synthesizes H-type: "];
-              htype_view]];
-          ActionPalette.make_palette (rs, rf);
+              htype_view]];   
+(*
           div ~a:[a_class ["container"]; a_id "footerContainer"] [
             p [
               pcdata "Source (OCaml): "; 
@@ -445,8 +448,10 @@ module AppView = struct
                 pcdata "Hazel Grove"
               ];
               pcdata "."]
-          ]
-        ])
+              ]
+ *)
+        ]
+      )
 end
 
 (* execution starts here *)
