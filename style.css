@@ -1,0 +1,133 @@
+.display-3{
+	height: 72px;
+	font-size: 60px;
+	width: 80%;
+	float: left;
+}
+
+.subtext{
+	width: 100%;
+}
+
+.logoDiv {
+	width: 20%;
+	min-height: 75px;
+	float: right;
+	text-align: right;
+}
+
+#logo {
+	height: 75px
+}
+
+.jumbotron{
+	padding-top: 11px;
+	margin-top: 24px;
+	padding-bottom: 69px;
+}
+
+.ModelExp {
+	padding: 10px;
+	font-size: xx-large;
+	margin-top: 20px;
+	background-color: white;
+	width:100%;
+	border: 2px solid #999;
+	display: table;
+}
+
+.ModelType {
+  font-size: large;
+	width:100%
+}
+
+.typeLbl {
+	font-weight: bold;
+	font-size: 12pt;
+}
+
+#numLabel {
+/*	float:left;*/
+}
+
+#num_input_id{
+	width:70%;
+}
+
+button:disabled {
+	background-color: #9d9d9d;
+	color: #27160d;
+	border-color:#27160d;
+}
+
+.HZElem{
+	float: left;
+}
+
+.HZElem img{
+	float: left;
+}
+
+.Model{
+	float:left;
+}
+
+
+.panel-title{
+	text-align: center;
+	background-color:#029344;
+	color: white;
+}
+
+
+.btn-outline-primary {
+	color: #975633;
+	background-image: none;
+	background-color: transparent;
+	border-color: #975633;
+	margin-bottom: 10px;
+	margin-right:20px;
+	}
+
+.input-group{
+	margin-bottom: 10px;
+}
+
+/*brown #975633*/
+
+.SDoc {
+	font-family: monospace;
+}
+
+.kw {
+	font-weight: bold;
+}
+
+.var {
+	font-style: italic;
+}
+
+.hole {
+  color: #a040a0
+}
+
+.cursor {
+	background-color: rgb(229, 255, 229);
+	border-bottom: 4px solid green;
+}
+
+.SIndentation {
+  white-space: pre;
+	background-color: rgba(0, 0, 0, 0);
+	border-bottom: 1px solid rgba(0, 0, 0, 0);
+}
+
+.NonEmptyHole {
+	border: 2px solid #a040a0;
+	border-radius: 4px;
+	margin-left: 3px;
+	margin-right: 3px;
+	padding-left: 3px;
+	padding-right: 3px;
+	
+}
