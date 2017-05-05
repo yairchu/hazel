@@ -4,15 +4,16 @@ module PPView = struct
   let (^^) = PP.(^^)
 
   (* Utility functions *)
+  let data = ()
   let taggedText tag s = 
-    PP.tagged tag (PP.text s)
-  let kw = taggedText "kw"
+    PP.tagged tag (PP.text (s, data))
+  let kw = taggedText "kw" 
   let parens = taggedText "paren" 
-  let op = taggedText "op"
+  let op = taggedText "op" 
   let var = taggedText "var" 
-  let space = taggedText "space" " "
+  let space = taggedText "space" " " 
   let term = PP.tagged
-  let optionalBreakSp = PP.optionalBreak " "
+  let optionalBreakSp = PP.optionalBreak (" ", data)
 
   (* # types *)
 
@@ -40,7 +41,7 @@ module PPView = struct
     | HTyp.Sum _ -> sum_precedence
     | HTyp.Arrow _ -> arrow_precedence
   let z_precedence ztau = match ztau with 
-    | ZTyp.CursorT tau -> h_precedence tau
+    | ZTyp.CursorT (_, tau) -> h_precedence tau
     | ZTyp.LeftArrow _ | ZTyp.RightArrow _ -> arrow_precedence
     | ZTyp.LeftSum _ | ZTyp.RightSum _ -> sum_precedence
 
@@ -77,15 +78,17 @@ module PPView = struct
       term "Hole" (taggedText "hole" "▢")
 
   let rec of_ztype' ztau paren = match ztau with 
-    | ZTyp.CursorT tau -> 
-      term "cursor" (of_htype' tau paren)
+    | ZTyp.CursorT (side, tau) -> 
+      let tag = "cursor cursorT " ^ (Hazel_semantics.str_of_cursor_side side) in 
+      term tag (of_htype' tau paren)
     | _ -> 
       if paren then 
         (parens "(") ^^ (PP.nestRelative 0 (of_ztype ztau)) ^^ (parens ")")
       else of_ztype ztau 
   and of_ztype ztau = match ztau with 
-    | ZTyp.CursorT tau -> 
-      term "cursor" (of_htype tau)
+    | ZTyp.CursorT (side, tau) -> 
+      let tag = "cursor cursorT " ^ (Hazel_semantics.str_of_cursor_side side) in 
+      term tag (of_htype tau)
     | ZTyp.LeftArrow (ztau, tau) -> 
       let (paren1, paren2) = 
         parenthesize_bi_r_tau arrow_precedence 
@@ -140,7 +143,7 @@ module PPView = struct
       (kw "λ") ^^ 
       (var x) ^^ 
       (kw ".") ^^ 
-      (PP.optionalBreak "") ^^
+      (PP.optionalBreak ("", data)) ^^
       (PP.nestRelative 4 r))
 
   let of_Ap r1 r2 = 

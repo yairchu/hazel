@@ -179,20 +179,25 @@ module HExp = struct
     | NonEmptyHole _ -> false
 end
 
+type cursor_side = L | R
+let str_of_cursor_side side = match side with 
+  | L -> "L"
+  | R -> "R"
+
 module ZTyp = struct
   type t =
-    | CursorT of HTyp.t
+    | CursorT of cursor_side * HTyp.t
     | LeftArrow of t * HTyp.t
     | RightArrow of HTyp.t * t
     | LeftSum of t * HTyp.t
     | RightSum of HTyp.t * t
 
   let rec erase zty = match zty with
-    | CursorT ty (* ETTop *) -> ty
-    | LeftArrow (zty1, ty2) (* ETArrL *) -> HTyp.Arrow ((erase zty1), ty2)
-    | RightArrow (ty1, zty2) (* ETArrR *) -> HTyp.Arrow (ty1, (erase zty2))
-    | LeftSum (zty1, ty2) (* (omitted from paper) *) -> HTyp.Sum ((erase zty1), ty2)
-    | RightSum (ty1, zty2) (* (omitted from paper) *) -> HTyp.Sum (ty1, (erase zty2))
+    | CursorT (_, ty) -> ty
+    | LeftArrow (zty1, ty2) -> HTyp.Arrow ((erase zty1), ty2)
+    | RightArrow (ty1, zty2) -> HTyp.Arrow (ty1, (erase zty2))
+    | LeftSum (zty1, ty2) -> HTyp.Sum ((erase zty1), ty2)
+    | RightSum (ty1, zty2) -> HTyp.Sum (ty1, (erase zty2))
 end
 
 module ZExp = struct
@@ -214,21 +219,21 @@ module ZExp = struct
     | NonEmptyHoleZ of t
 
   let rec erase ze = match ze with
-    | CursorE e (* EETop *) -> e
-    | LeftAsc (ze', ty) (* EEAscL *) -> HExp.Asc ((erase ze'), ty)
-    | RightAsc (e', zty) (* EEAscR *) -> HExp.Asc (e', (ZTyp.erase zty))
+    | CursorE e -> e
+    | LeftAsc (ze', ty) -> HExp.Asc ((erase ze'), ty)
+    | RightAsc (e', zty) -> HExp.Asc (e', (ZTyp.erase zty))
     | LetZ1 (x, ze, e) -> HExp.Let (x, erase ze, e)
     | LetZ2 (x, e, ze) -> HExp.Let (x, e, erase ze)
-    | LamZ (x, ze') (* EELam *) -> HExp.Lam (x, (erase ze'))
-    | LeftAp (ze', e) (* EEApL *) -> HExp.Ap ((erase ze'), e)
-    | RightAp (e, ze') (* EEApR *) -> HExp.Ap (e, (erase ze'))
-    | LeftPlus (ze', e) (* EEPlusL *) -> HExp.Plus ((erase ze'), e)
-    | RightPlus (e, ze') (* EEPlusR *) -> HExp.Plus (e, (erase ze'))
-    | InjZ (side, ze) (* (omitted from paper) *) -> HExp.Inj (side, (erase ze))
-    | CaseZ1 (ze, branch1, branch2) (* (omitted from paper) *) -> HExp.Case ((erase ze), branch1, branch2)
-    | CaseZ2 (e, (x, ze), branch2) (* (omitted from paper) *) -> HExp.Case (e, (x, (erase ze)), branch2)
-    | CaseZ3 (e, branch1, (y, ze)) (* (omitted from paper) *) -> HExp.Case (e, branch1, (y, (erase ze)))
-    | NonEmptyHoleZ ze' (* EENEHole *) -> HExp.NonEmptyHole (erase ze')
+    | LamZ (x, ze') -> HExp.Lam (x, (erase ze'))
+    | LeftAp (ze', e) -> HExp.Ap ((erase ze'), e)
+    | RightAp (e, ze') -> HExp.Ap (e, (erase ze'))
+    | LeftPlus (ze', e) -> HExp.Plus ((erase ze'), e)
+    | RightPlus (e, ze') -> HExp.Plus (e, (erase ze'))
+    | InjZ (side, ze) -> HExp.Inj (side, (erase ze))
+    | CaseZ1 (ze, branch1, branch2) -> HExp.Case ((erase ze), branch1, branch2)
+    | CaseZ2 (e, (x, ze), branch2) -> HExp.Case (e, (x, (erase ze)), branch2)
+    | CaseZ3 (e, branch1, (y, ze)) -> HExp.Case (e, branch1, (y, (erase ze)))
+    | NonEmptyHoleZ ze' -> HExp.NonEmptyHole (erase ze')
 end
 
 module Action = struct
@@ -262,43 +267,57 @@ module Action = struct
 
   let rec performTyp a zty = match (a, zty) with
     (* Movement *)
-    | (Move (Child 1), ZTyp.CursorT (HTyp.Arrow (ty1, ty2))) (* TMArrChild1 *) ->
-      ZTyp.LeftArrow ((ZTyp.CursorT ty1), ty2)
-    | (Move (Child 2), ZTyp.CursorT (HTyp.Arrow (ty1, ty2))) (* TMArrChild2 *) ->
-      ZTyp.RightArrow (ty1, ZTyp.CursorT ty2)
-    | (Move Parent, ZTyp.LeftArrow ((ZTyp.CursorT ty1), ty2)) (* TMArrParent1 *) ->
-      ZTyp.CursorT (HTyp.Arrow (ty1, ty2))
-    | (Move Parent, ZTyp.RightArrow (ty1, ZTyp.CursorT ty2)) (* TMArrParent2 *) ->
-      ZTyp.CursorT (HTyp.Arrow (ty1, ty2))
-    | (Move (Child 1), ZTyp.CursorT (HTyp.Sum (ty1, ty2))) (* 25a *) ->
-      ZTyp.LeftSum ((ZTyp.CursorT ty1), ty2)
-    | (Move (Child 2), ZTyp.CursorT (HTyp.Sum (ty1, ty2))) (* 25b *) ->
-      ZTyp.RightSum (ty1, ZTyp.CursorT ty2)
-    | (Move Parent, ZTyp.LeftSum ((ZTyp.CursorT ty1), ty2)) (* 25c *) ->
-      ZTyp.CursorT (HTyp.Sum (ty1, ty2))
-    | (Move Parent, ZTyp.RightSum (ty1, ZTyp.CursorT ty2)) (* 25d *) ->
-      ZTyp.CursorT (HTyp.Sum (ty1, ty2))
+    | (Move (Child 1), ZTyp.CursorT (side, HTyp.Arrow (ty1, ty2))) ->
+      ZTyp.LeftArrow ((ZTyp.CursorT (side, ty1), ty2))
+    | (Move (Child 2), ZTyp.CursorT (side, HTyp.Arrow (ty1, ty2))) ->
+      ZTyp.RightArrow (ty1, ZTyp.CursorT (side, ty2))
+    | (Move Parent, ZTyp.LeftArrow ((ZTyp.CursorT (side, ty1)), ty2)) ->
+      ZTyp.CursorT (side, HTyp.Arrow (ty1, ty2))
+    | (Move Parent, ZTyp.RightArrow (ty1, ZTyp.CursorT (side, ty2))) ->
+      ZTyp.CursorT (side, HTyp.Arrow (ty1, ty2))
+    | (Move (Child 1), ZTyp.CursorT (side, HTyp.Sum (ty1, ty2))) ->
+      ZTyp.LeftSum ((ZTyp.CursorT (side, ty1)), ty2)
+    | (Move (Child 2), ZTyp.CursorT (side, HTyp.Sum (ty1, ty2))) ->
+      ZTyp.RightSum (ty1, ZTyp.CursorT (side, ty2))
+    | (Move Parent, ZTyp.LeftSum ((ZTyp.CursorT (side, ty1)), ty2)) ->
+      ZTyp.CursorT (side, (HTyp.Sum (ty1, ty2)))
+    | (Move Parent, ZTyp.RightSum (ty1, ZTyp.CursorT (side, ty2))) ->
+      ZTyp.CursorT (side, (HTyp.Sum (ty1, ty2)))
     (* Del *)
-    | (Del, ZTyp.CursorT ty) (* TMDel *) ->
-      ZTyp.CursorT (HTyp.Hole)
+    | (Del, ZTyp.CursorT (side, ty)) ->
+      ZTyp.CursorT (side, HTyp.Hole)
     (* Construct *)
-    | (Construct SArrow, ZTyp.CursorT ty) (* TMConArrow *) ->
-      ZTyp.RightArrow (ty, ZTyp.CursorT HTyp.Hole)
-    | (Construct SNum, ZTyp.CursorT HTyp.Hole) (* TMConNum *) ->
-      ZTyp.CursorT HTyp.Num
-    | (Construct SSum, ZTyp.CursorT ty) (* 22a *) ->
-      ZTyp.RightSum (ty, ZTyp.CursorT HTyp.Hole)
+    | (Construct SArrow, ZTyp.CursorT (side, ty)) ->
+      begin match side with 
+        | L -> ZTyp.LeftArrow (
+            (ZTyp.CursorT (R, HTyp.Hole)), 
+            ty)
+        | R -> ZTyp.RightArrow (
+            ty, 
+            (ZTyp.CursorT (L, HTyp.Hole)))
+      end
+    | (Construct SNum, ZTyp.CursorT (_, HTyp.Hole)) ->
+      ZTyp.CursorT (R, HTyp.Num)
+    | (Construct SSum, ZTyp.CursorT (side, ty)) ->
+      begin match side with 
+        | L -> ZTyp.LeftSum (
+            (ZTyp.CursorT (R, HTyp.Hole)), 
+            ty)
+        | R -> ZTyp.RightSum (
+            ty, 
+            (ZTyp.CursorT (L, HTyp.Hole)))
+      end
     (* Zipper Rules *)
-    | (_, ZTyp.LeftArrow (zty1, ty2)) (* TMArrZip1 *) ->
+    | (_, ZTyp.LeftArrow (zty1, ty2)) ->
       let zty1' = performTyp a zty1 in
       ZTyp.LeftArrow (zty1', ty2)
-    | (_, ZTyp.RightArrow (ty1, zty2)) (* TMArrZip2 *) ->
+    | (_, ZTyp.RightArrow (ty1, zty2)) ->
       let zty2' = performTyp a zty2 in
       ZTyp.RightArrow (ty1, zty2')
-    | (_, ZTyp.LeftSum (zty1, ty2)) (* 22b *) ->
+    | (_, ZTyp.LeftSum (zty1, ty2)) ->
       let zty1' = performTyp a zty1 in
       ZTyp.LeftSum (zty1', ty2)
-    | (_, ZTyp.RightSum (ty1, zty2)) (* 22c *) ->
+    | (_, ZTyp.RightSum (ty1, zty2)) ->
       let zty2' = performTyp a zty2 in
       ZTyp.RightSum (ty1, zty2')
     | _ ->
@@ -311,10 +330,10 @@ module Action = struct
         | ((Child 1), ZExp.CursorE (HExp.Asc (e, ty))) (* EMAscChild1 *) ->
           ZExp.LeftAsc ((ZExp.CursorE e), ty)
         | ((Child 2), ZExp.CursorE (HExp.Asc (e, ty))) (* EMAscChild2 *) ->
-          ZExp.RightAsc (e, (ZTyp.CursorT ty))
+          ZExp.RightAsc (e, (ZTyp.CursorT (L, ty)))
         | (Parent, ZExp.LeftAsc ((ZExp.CursorE e), ty)) (* EMAscParent1 *) ->
           ZExp.CursorE (HExp.Asc (e, ty))
-        | (Parent, ZExp.RightAsc (e, ZTyp.CursorT ty)) (* EMAscParent2 *) ->
+        | (Parent, ZExp.RightAsc (e, ZTyp.CursorT (_, ty))) (* EMAscParent2 *) ->
           ZExp.CursorE (HExp.Asc (e, ty))
         (* Let *)
         | ((Child 1), ZExp.CursorE (HExp.Let (x, e, e'))) -> 
@@ -393,7 +412,7 @@ module Action = struct
           ((ZExp.CursorE HExp.EmptyHole), HTyp.Hole)
         (* Construction *)
         | (Construct SAsc, (ZExp.CursorE e, ty)) (* SAConAsc *) ->
-          (ZExp.RightAsc (e, ZTyp.CursorT ty), ty)
+          (ZExp.RightAsc (e, ZTyp.CursorT (L, ty)), ty)
         | (Construct (SVar x), (ZExp.CursorE HExp.EmptyHole, HTyp.Hole)) (* SAConVar *) ->
           begin match Ctx.lookup ctx x with
             | Some xty -> (ZExp.CursorE (HExp.Var x), xty)
@@ -409,7 +428,7 @@ module Action = struct
         | (Construct (SLam x), (ZExp.CursorE HExp.EmptyHole, HTyp.Hole)) (* SAConLam *) ->
           (ZExp.RightAsc (
               HExp.Lam (x, HExp.EmptyHole),
-              ZTyp.LeftArrow (ZTyp.CursorT HTyp.Hole, HTyp.Hole)),
+              ZTyp.LeftArrow (ZTyp.CursorT (L, HTyp.Hole), HTyp.Hole)),
            HTyp.Arrow (HTyp.Hole, HTyp.Hole))
         | (Construct SAp, (ZExp.CursorE e, ty)) ->
           begin match HTyp.matched_arrow ty with
@@ -436,7 +455,7 @@ module Action = struct
         | (Construct (SInj side), (ZExp.CursorE HExp.EmptyHole, HTyp.Hole)) (* 24a *) ->
           (ZExp.RightAsc(
               HExp.Inj (side, HExp.EmptyHole),
-              ZTyp.LeftSum (ZTyp.CursorT HTyp.Hole, HTyp.Hole)),
+              ZTyp.LeftSum (ZTyp.CursorT (L, HTyp.Hole), HTyp.Hole)),
            HTyp.Sum (HTyp.Hole, HTyp.Hole))
         | (Construct (SCase (x, y)), ((ZExp.CursorE e), ty)) ->
           begin match HTyp.matched_sum ty with
@@ -537,7 +556,7 @@ module Action = struct
       ZExp.CursorE HExp.EmptyHole
     (* Construction *)
     | (Construct SAsc, ZExp.CursorE e, _) (* AAConAsc *) ->
-      ZExp.RightAsc (e, ZTyp.CursorT ty)
+      ZExp.RightAsc (e, ZTyp.CursorT (R, ty))
     | (Construct (SVar x), ZExp.CursorE HExp.EmptyHole, ty) when begin
       match Ctx.lookup ctx x with
       | Some xty -> HTyp.inconsistent ty xty
@@ -551,7 +570,7 @@ module Action = struct
         | None (* AAConLam2 *) -> ZExp.NonEmptyHoleZ (
             ZExp.RightAsc (
               HExp.Lam (x, HExp.EmptyHole),
-              ZTyp.LeftArrow (ZTyp.CursorT HTyp.Hole, HTyp.Hole)
+              ZTyp.LeftArrow (ZTyp.CursorT (L, HTyp.Hole), HTyp.Hole)
             ))
       end
     | (Construct SLit n, ZExp.CursorE HExp.EmptyHole, ty) when HTyp.inconsistent ty HTyp.Num (* AAConNumLit *) ->
@@ -563,7 +582,7 @@ module Action = struct
         | None (* 23b *) -> ZExp.NonEmptyHoleZ (
             ZExp.RightAsc (
               HExp.Inj (side, HExp.EmptyHole),
-              ZTyp.LeftSum (ZTyp.CursorT HTyp.Hole, HTyp.Hole)
+              ZTyp.LeftSum (ZTyp.CursorT (L, HTyp.Hole), HTyp.Hole)
             ))
       end
     | (Construct (SCase (x, y)), ZExp.CursorE e, ty) (* 23c *) ->

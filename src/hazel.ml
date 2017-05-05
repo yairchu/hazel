@@ -13,6 +13,9 @@ module Util = struct
 end
 
 module JSUtil = struct
+
+  let log x = Firebug.console##log x
+
   let forceGetElementById id = 
     let doc = Dom_html.document in  
     Js.Opt.get (doc##getElementById (Js.string id))
@@ -401,16 +404,56 @@ module AppView = struct
     (* pp view *) 
     let pp_view_width = 30 in 
     let pp_rs = React.S.map (fun (zexp, _) -> 
-        let prettified = Pretty.HTML_Of_SDoc.html_of_sdoc (
+        let prettified, _ = Pretty.PP.html_of_sdoc (
             Pretty.PP.sdoc_of_doc pp_view_width (PPView.of_zexp zexp)) in 
         [prettified]) rs in 
-    let pp_view = (R.Html5.div (ReactiveData.RList.from_signal pp_rs)) in 
+    let pp_view = (
+      R.Html5.div 
+        ~a:[
+          Html5.a_contenteditable true;
+          Html5.a_onkeypress (fun evt -> 
+              (* when pressing letters, don't actually insert them *)
+              let _ = Dom.preventDefault evt in 
+              true
+            );
+          Html5.a_onkeydown (fun evt -> 
+            let which = JSUtil.get_keyCode evt in 
+            (* let _ = JSUtil.log which in *) 
+            if which == 8 || which == 46 then 
+              (* prevent backspace and del *)
+              let _ = Dom.preventDefault evt in 
+              false 
+            else true); 
+          Html5.a_ondrop (fun evt -> 
+              (* don't allow drag and drop of stuff into the view *)
+              let _ = Dom.preventDefault evt in 
+              false);
+        ]
+        (ReactiveData.RList.from_signal pp_rs)) in 
+    let pp_view_dom = Tyxml_js.To_dom.of_div pp_view in 
+    let preventDefaultHandler evt = 
+      let _ = Dom.preventDefault evt in 
+      false in 
+    (* Prevent cut and paste
+     * (have to do it here because a_onpaste and a_oncut are not defined) *)
+    let _ = JSUtil.listen_to_t 
+              (Dom.Event.make "paste")
+              pp_view_dom
+              preventDefaultHandler in 
+    let _ = JSUtil.listen_to_t 
+              (Dom.Event.make "cut")
+              pp_view_dom
+              preventDefaultHandler in 
+    let _ = JSUtil.listen_to_t
+        (Dom.Event.make "selectionchange")
+        Dom_html.document
+        (fun evt -> ()) in 
 
     (* htype view *)
     let htype_rs = React.S.map (fun (_, htype) -> 
         let pp_view = PPView.of_htype htype in 
         let sdoc = Pretty.PP.sdoc_of_doc pp_view_width pp_view in 
-        let prettified = Pretty.HTML_Of_SDoc.html_of_sdoc sdoc in 
+        let prettified, table = Pretty.PP.html_of_sdoc sdoc in 
         [prettified]) rs in 
     let htype_view = (R.Html5.div (ReactiveData.RList.from_signal htype_rs)) in 
 
