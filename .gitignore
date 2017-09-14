@@ -29,6 +29,7 @@ setup.log
 *.vo
 *.vo.aux
 core/ml/*
+core/hs/*
 hazel_semantics.re
 
 # www artifacts

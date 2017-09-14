@@ -844,4 +844,20 @@ Extract Inductive nat => int [ "0" "succ" ]
 Extract Inductive Fuel => "unit" [ "()" "()" ] "(fun fMore _ fKicked -> fMore ())".
 (*Extract Inlined Constant pipe_forward => "(|>)".*)
 
-Extraction Action.
+Extraction Language Ocaml.
+Extraction "ml/hazel_core.ml" Action.
+
+Extract Inductive bool => "Prelude.Bool" ["Prelude.True" "Prelude.False"].
+Extract Inductive unit => "()" ["()"].
+Extract Constant negb => "Prelude.not".
+Extract Constant Coq.Arith.PeanoNat.Nat.eqb => "(Prelude.==)".
+Extract Inductive option => "Prelude.Maybe" ["Prelude.Just" "Prelude.Nothing"].
+Extract Inductive prod => "(,)" ["(,)"].
+Extract Inductive list => "[]" [ "[]" "(:)" ].
+Extract Inductive nat => "Prelude.Int" [ "0" "Prelude.succ" ]
+       "(\f0 fS n -> if n Prelude.== 0 then f0 () else fS (n Prelude.- 1))".
+Extract Inductive Fuel => "()" [ "()" "()" ] "(\fMore _ fKicked -> fMore ())".
+(*Extract Inlined Constant pipe_forward => "(|>)".*)
+
+Extraction Language Haskell.
+Extraction "hs/HazelCore.hs" Action.
